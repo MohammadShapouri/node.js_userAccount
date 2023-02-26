@@ -6,6 +6,10 @@ mongoose.connect('mongodb://localhost/DemoUserModel')
 
 
 
+
+const usernameRegex = /^[A-Za-z][A-Za-z0-9_]{7,29}$/;
+const phone_numberRegex = /^09(1[0-9]|3[1-9]|2[1-9])-?[0-9]{3}-?[0-9]{4}$/;
+
 const UserAccountSchema = mongoose.Schema({
 	first_name: {
 		type: String,
@@ -28,7 +32,6 @@ const UserAccountSchema = mongoose.Schema({
 		validate: {
 			isasync: false,
 			validator: function(value) {
-				const usernameRegex = /^[A-Za-z][A-Za-z0-9_]{7,29}$/;
 				return usernameRegex.test(value);
 			},
 			message: '{VALUE} is not a valid username.'
@@ -36,15 +39,20 @@ const UserAccountSchema = mongoose.Schema({
 		// match: [/^[A-Za-z][A-Za-z0-9_]{7,29}$/, '{VALUE} is not a valid username.']
 	},
 	phone_number: {
-		type: Number,
-		maxlength: 11,
+		type: String,
 		require: [true, 'Phone number is required.'],
 		unique: [true, 'Phone Number must be unique.'],
-		match: [/^09(1[0-9]|3[1-9]|2[1-9])-?[0-9]{3}-?[0-9]{4}$/, '{VALUE} is not a valid phone number.']
+		validate: {
+			isasync: false,
+			validator: function(value) {
+				return phone_numberRegex.test(value);
+			},
+			message: '{VALUE} is not a valid phone number.'
+		}
 	},
 	password: {
 		type: String,
-		maxlength: 1024,
+		maxlength: 512,
 		require: [true, 'Password is required.']
 	},
 	creation_date: {
@@ -70,9 +78,61 @@ const UserAccount = mongoose.model("User Account", UserAccountSchema)
 
 
 
-module.exports = UserAccount;
 
 
+
+
+
+
+
+
+
+
+// const OTPValidationSchema = mongoose.Schema({
+// 	OTPCode: {
+// 		type: Number,
+// 		minlength: 8,
+// 		maxlength: 8,
+// 		require: [true, 'OTP Code is required.']
+// 	},
+// 	try_counter: {
+// 		type: Number,
+// 		maxlength: 5,
+// 		default: 0
+// 	},
+// 	created_at: {
+// 		type: Date,
+// 		default: Date.now
+// 	},
+// 	expires_at: {
+// 		type: Date,
+// 		default: new Date(+new Date() + 1 * 60 * 60 * 1000)
+// 		// default: function() {return +new Date() + 1*60*60*1000}
+// 	},
+// 	is_used: {
+// 		type: Boolean,
+// 		default: false
+// 	}
+// });
+// const OTPValidationModel = mongoose.model("OTP Validation Model". OTPValidationSchema);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+module.exports.UserAccount = UserAccount;
+module.exports.usernameRegex = usernameRegex;
+module.exports.phone_numberRegex = phone_numberRegex;
+// module.exports.OTPValidationModel = OTPValidationModel;
 
 
 
