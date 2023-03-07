@@ -10,14 +10,14 @@ function generateJWTToken(username, phone_number, JWTKey, JWTAccessTokenExpirySe
 
 		if(JWTAccessTokenExpirySeconds === null) {
 			JWTAccessTokenExpirySeconds === 5*60*1000;
-		} else if(typeof(JWTAccessTokenExpirySeconds !== null && JWTAccessTokenExpirySeconds) !== 'Integer') {
-			return {status: 'failure', JWTAccessToken: null, JWTRefreshToken: null, error: 'JWTAccessTokenExpirySeconds must be \'Integer\'.'};
+		} else if(typeof(JWTAccessTokenExpirySeconds !== null && JWTAccessTokenExpirySeconds) !== 'number') {
+			return {status: 'failure', JWTAccessToken: null, JWTRefreshToken: null, error: 'JWTAccessTokenExpirySeconds must be \'number\'.'};
 		}
 
 		if(JWTRefreshTokenExpirySeconds === null) {
 			JWTRefreshTokenExpirySeconds === 180*24*60*60*1000;
-		} else if(typeof(JWTRefreshTokenExpirySeconds !== null && JWTRefreshTokenExpirySeconds) !== 'Integer') {
-			return {status: 'failure', JWTAccessToken: null, JWTRefreshToken: null, error: 'JWTRefreshTokenExpirySeconds must be \'Integer\'.'};
+		} else if(typeof(JWTRefreshTokenExpirySeconds !== null && JWTRefreshTokenExpirySeconds) !== 'number') {
+			return {status: 'failure', JWTAccessToken: null, JWTRefreshToken: null, error: 'JWTRefreshTokenExpirySeconds must be \'number\'.'};
 		}
 
 		const JWTAccessToken = jwt.sign({username, phone_number}, JWTKey, {algorithm: "HS256", expiresIn: JWTAccessTokenExpirySeconds});
@@ -34,7 +34,7 @@ function generateJWTToken(username, phone_number, JWTKey, JWTAccessTokenExpirySe
 
 
 
-function validateJWTToken(JWTAccessToken, JWTKey) {
+function validateJWTTokenStructure(JWTAccessToken, JWTKey) {
 	try {
 		if(JWTToken === null) return {status: 'failure', payload: null, error: 'JWTToken is required. Don\'t leave it empty.'};
 		if(JWTKey === null) return {status: 'failure', payload: null, error: 'JWTKey is required. Don\'t leave it empty.'};
@@ -83,6 +83,90 @@ function renewJWTToken(JWTRefreshToken, JWTKey) {
 			return {status: 'failure', JWTAccessToken: null, JWTRefreshToken: null, error: 'Unauthorized. JWT token is invalid. No user found with this JWT token.', recommended_status_code:401};
 		}
 		return {status: 'failure', JWTAccessToken: null, JWTRefreshToken: null, error: 'Something went wrong during renewing JWT token.', recommended_status_code:400};
+	}
+
+}
+
+
+module.exports.generateJWTToken = generateJWTToken;
+module.exports.validateJWTTokenStructure = validateJWTTokenStructure;
+module.exports.renewJWTToken = renewJWTToken;
+
+
+
+
+
+
+
+
+// NEW CODES WITH THE SAME FUNCTIONALITY.
+
+function generateJWTToken(username, phone_number, JWTKey, JWTAccessTokenExpirySeconds, JWTRefreshTokenExpirySeconds) {
+	if(username === null) return throw new Error('username is required. Don\'t leave it empty.');
+	if(phone_number === null) return throw new Error('phone_number is required. Don\'t leave it empty.');
+	if(JWTKey === null) return throw new Error('JWTKey is required. Don\'t leave it empty.');
+
+	if(JWTAccessTokenExpirySeconds === null) {
+		JWTAccessTokenExpirySeconds === 5*60*1000;
+	} else if(typeof(JWTAccessTokenExpirySeconds !== null && JWTAccessTokenExpirySeconds) !== 'Integer') {
+		return throw new Error('JWTAccessTokenExpirySeconds must be \'Integer\'.');
+	}
+
+	if(JWTRefreshTokenExpirySeconds === null) {
+		JWTRefreshTokenExpirySeconds === 180*24*60*60*1000;
+	} else if(typeof(JWTRefreshTokenExpirySeconds !== null && JWTRefreshTokenExpirySeconds) !== 'Integer') {
+		return throw new Error('JWTRefreshTokenExpirySeconds must be \'Integer\'.');
+	}
+
+	const JWTAccessToken = jwt.sign({username, phone_number}, JWTKey, {algorithm: "HS256", expiresIn: JWTAccessTokenExpirySeconds});
+	const JWTRefreshToken = jwt.sign({username, phone_number, JWTAccessTokenExpirySeconds}, JWTKey, {algorithm: "HS256", expiresIn: JWTRefreshTokenExpirySeconds});
+	return {JWTAccessToken: JWTAccessToken, JWTRefreshToken: JWTRefreshToken};	
+}
+
+
+
+
+
+
+
+function validateJWTTokenStructure(JWTAccessToken, JWTKey) {
+		if(JWTToken === null) throw new Error('JWTToken is required. Don\'t leave it empty.');
+		if(JWTKey === null) throw new Error('JWTKey is required. Don\'t leave it empty.');
+
+		// It can be a reason of error if jwt token is invalid.
+		const payload = jwt.verify(JWTAccessToken, JWTKey);
+		return payload;
+}
+
+
+
+
+
+
+function renewJWTToken(JWTRefreshToken, JWTKey) {
+	try {
+		if(JWTToken === null) throw new Error('JWTToken is required. Don\'t leave it empty.');
+		if(JWTKey === null) throw new Error('JWTKey is required. Don\'t leave it empty.');
+
+		// It can be a reason of error if jwt token is invalid.
+		const payload = jwt.verify(JWTRefreshToken, JWTKey);
+
+		// // We ensure that a new token is not issued until enough time has elapsed
+		// // In this case, a new token will only be issued if the old token is within
+		// // 30 seconds of expiry. Otherwise, return a bad request status
+		// const nowUnixSeconds = Math.round(Number(new Date()) / 1000)
+		// if (payload.exp - nowUnixSeconds > 30) {
+		// 	// return res.status(400).end()
+		// 	return {status: 'failure', JWTAccessToken: null, JWTRefreshToken: null, error: 'can only renew JWT token within 30 seconds of its expiry.'};
+		// }
+
+		const JWTAccessToken = jwt.sign({payload.username, payload.phone_number}, JWTKey, {algorithm: "HS256", expiresIn: payload.JWTAccessTokenExpirySeconds});
+		return {JWTAccessToken: JWTAccessToken};
+
+	} catch(error) {
+		// This 'if statement' seperates unautherized user error (invalid jwt token caused it) from server errors.
+		if (error instanceof jwt.JsonWebTokenError) {
+			return {JWTAccessToken: null, error: 'Unauthorized. JWT token is invalid. No user found with this JWT token. recommended_status_code:401'};
 	}
 
 }

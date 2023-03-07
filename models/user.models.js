@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const {hashPassword} = require('../services/UserAccount/plugins.js')
 
 mongoose.connect('mongodb://localhost/DemoUserModel')
 	.then(result => console.log('Connected to DB'))
@@ -32,7 +33,7 @@ const UserAccountSchema = mongoose.Schema({
 		validate: {
 			isasync: false,
 			validator: function(value) {
-				return usernameRegex.test(value);
+				return new RegExp(usernameRegex).test(value);
 			},
 			message: '{VALUE} is not a valid username.'
 		}
@@ -45,7 +46,7 @@ const UserAccountSchema = mongoose.Schema({
 		validate: {
 			isasync: false,
 			validator: function(value) {
-				return phone_numberRegex.test(value);
+				return new RegExp(phone_numberRegex).test(value);
 			},
 			message: '{VALUE} is not a valid phone number.'
 		}
@@ -74,6 +75,91 @@ const UserAccountSchema = mongoose.Schema({
 });
 const UserAccount = mongoose.model("User Account", UserAccountSchema)
 
+
+
+
+
+
+
+
+async function findUserAccountsForValidation(username, phone_number) {
+	return await UserAccount.find({ $or: [{ username: username }, { phone_number: phone_number }] });
+}
+
+
+async function findUserAccountById(_id, selectFields=null) {
+	return await UserAccount.findById(_id)
+				.select(selectFields);
+}
+// ?selectFields=password&selectFields=_id
+
+async function createUserAccount(body) {
+	const hashedPassword = await hashPassword(body.password1);
+	body['password'] = hashedPassword;
+	delete body.password1;
+	delete body.password2;
+	return await UserAccount.create(body);
+}
+
+
+async function updateUserAccountById(_id, body) {
+	if('new_password1' in body === true && 'new_password2' in body === true) {
+		return await UserAccount.findByIdAndUpdate(_id, {password: await hashPassword(body.new_password1)}, {new:true});
+	} else {
+		return await UserAccount.findByIdAndUpdate(_id, body, {new: true});
+	}
+}
+
+
+async function deleteUserAccountById(_id) {
+	return await UserAccount.findByIdAndDelete(_id, {new: true});
+}
+
+
+async function findAllUserAccounts(pageNumber, pageLimit, filterFields, sortFields, selectFields) {
+	// const accountsCount = await UserAccount.countDocuments({});
+	var findEXP = null;
+	if(filterFields.length === 0) {
+		findEXP = {};
+	} else {
+		findEXP = {$and: filterFields};
+	}
+
+	const userAccounts = await UserAccount.find(findEXP)
+					.limit(pageLimit*1)
+					.skip((pageNumber-1)*pageLimit)
+					.sort(sortFields)
+					.select(selectFields);
+	return {
+		data: userAccounts,
+		totalPages: Math.ceil(userAccounts.length/pageLimit),
+		currentPage: pageNumber
+		};
+}
+
+
+// async function findSpecificUserAccount(filterFields, selectFields) {
+// 	return await UserAccount.find({$and: filterFields})
+// 				.select(selectFields);
+// }
+
+
+
+
+
+
+
+
+
+module.exports.usernameRegex = usernameRegex;
+module.exports.phone_numberRegex = phone_numberRegex;
+module.exports.UserAccount = UserAccount;
+module.exports.findUserAccountsForValidation = findUserAccountsForValidation
+module.exports.findUserAccountById = findUserAccountById;
+module.exports.createUserAccount = createUserAccount;
+module.exports.updateUserAccountById = updateUserAccountById;
+module.exports.deleteUserAccountById = deleteUserAccountById;
+module.exports.findAllUserAccounts = findAllUserAccounts;
 
 
 
@@ -121,24 +207,30 @@ const UserAccount = mongoose.model("User Account", UserAccountSchema)
 
 
 
-
-
-
-
-
-
-
-
-module.exports.UserAccount = UserAccount;
-module.exports.usernameRegex = usernameRegex;
-module.exports.phone_numberRegex = phone_numberRegex;
 // module.exports.OTPValidationModel = OTPValidationModel;
 
 
 
 
 
- // validate: {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// validate: {
         //     isAsync: true,
         //     validator: function(value, callback= result => result) {
         //         const notes = this.model('Note').find({title: {$regex: new RegExp(value, "i")}}).count();

@@ -1,5 +1,4 @@
 const bcrypt = require('bcryptjs');
-const mongoose = require('mongoose');
 const {UserAccount} = require('../../models/user.models.js');
 
 
@@ -30,7 +29,7 @@ async function comparePassword(plainTextPassword, userAccountDoc=null, userAccou
 			userAccount = userAccountDoc;
 		} else if(userAccountID) {
 			userAccount = await UserAccount.findById(userAccountID);
-			if(userAccount.length === 0) return {status: 'invalidUser', compareResult: null, error: null};
+			if(userAccount === null || userAccount.length === 0) return {status: 'invalidUser', compareResult: null, error: null};
 		}
 		return {status: 'success', compareResult: await bcrypt.compare(plainTextPassword , userAccountDoc.password), error: null};
 	} catch(error) {

@@ -6,8 +6,12 @@ const morgan = require('morgan');
 const multer = require('multer');
 
 
+const {URLParser} = require('./middlewares/URLParser.js');
+
+
 // ROUTES.
-const UserRoutes = require('./routes/user.routes.js');
+const UserRoutes = require('./services/user.routes.js');
+
 
 
 // .
@@ -19,7 +23,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(multer().none());
 app.use(morgan('tiny'));
-
+app.use(URLParser);
 
 
 // .
