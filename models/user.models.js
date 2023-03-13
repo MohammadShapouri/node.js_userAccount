@@ -71,6 +71,11 @@ const UserAccountSchema = mongoose.Schema({
 	is_phone_number_verified:{
 		type: Boolean,
 		default: false
+	},
+	OTP_code: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "OTP Validation",
+		require: false
 	}
 });
 const UserAccount = mongoose.model("User Account", UserAccountSchema)
@@ -92,6 +97,12 @@ async function findUserAccountById(_id, selectFields=null) {
 				.select(selectFields);
 }
 // ?selectFields=password&selectFields=_id
+
+
+async function findUserAccountByPhoneNumber(phone_number) {
+	return await UserAccount.find({ phone_number: phone_number });
+}
+
 
 async function createUserAccount(body) {
 	const hashedPassword = await hashPassword(body.password1);
@@ -154,8 +165,9 @@ async function findAllUserAccounts(pageNumber, pageLimit, filterFields, sortFiel
 module.exports.usernameRegex = usernameRegex;
 module.exports.phone_numberRegex = phone_numberRegex;
 module.exports.UserAccount = UserAccount;
-module.exports.findUserAccountsForValidation = findUserAccountsForValidation
+module.exports.findUserAccountsForValidation = findUserAccountsForValidation;
 module.exports.findUserAccountById = findUserAccountById;
+module.exports.findUserAccountByPhoneNumber = findUserAccountByPhoneNumber;
 module.exports.createUserAccount = createUserAccount;
 module.exports.updateUserAccountById = updateUserAccountById;
 module.exports.deleteUserAccountById = deleteUserAccountById;
@@ -174,40 +186,6 @@ module.exports.findAllUserAccounts = findAllUserAccounts;
 
 
 
-// const OTPValidationSchema = mongoose.Schema({
-// 	OTPCode: {
-// 		type: Number,
-// 		minlength: 8,
-// 		maxlength: 8,
-// 		require: [true, 'OTP Code is required.']
-// 	},
-// 	try_counter: {
-// 		type: Number,
-// 		maxlength: 5,
-// 		default: 0
-// 	},
-// 	created_at: {
-// 		type: Date,
-// 		default: Date.now
-// 	},
-// 	expires_at: {
-// 		type: Date,
-// 		default: new Date(+new Date() + 1 * 60 * 60 * 1000)
-// 		// default: function() {return +new Date() + 1*60*60*1000}
-// 	},
-// 	is_used: {
-// 		type: Boolean,
-// 		default: false
-// 	}
-// });
-// const OTPValidationModel = mongoose.model("OTP Validation Model". OTPValidationSchema);
-
-
-
-
-
-
-// module.exports.OTPValidationModel = OTPValidationModel;
 
 
 

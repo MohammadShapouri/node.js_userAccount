@@ -3,7 +3,7 @@ const {ValidateDeleteAccountPasswords} = require('./validators.js');
 const {comparePassword} = require('./plugins.js');
 
 
-async function deleteUserAccount(req, res) {
+const deleteUserAccount = async(req, res) => {
 	try {
 		const requestedUserAccount = await findUserAccountById(req.params.id);
 		// Sequence is so important in this if condition.

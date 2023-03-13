@@ -14,12 +14,12 @@ const {changeUserAccountPassword} = require('./UserAccount/changeUserAccountPass
 
 
 
-router.get('/', (req, res) => getAllUserAccount(req, res));
-router.get('/:id', (req, res) => getSpecificUserAccount(req, res));
-router.post('/', (req, res) => addUserAccount(req, res));
-router.patch('/:id', (req, res) => updateUserAccount(req, res));
-router.delete('/:id', (req, res) => deleteUserAccount(req, res));
-router.patch('/changepassword/:id', (req, res) => changeUserAccountPassword(req, res));
+router.get('/', getAllUserAccount);
+router.get('/:id', getSpecificUserAccount);
+router.post('/', addUserAccount);
+router.patch('/:id', updateUserAccount);
+router.delete('/:id', deleteUserAccount);
+router.patch('/changepassword/:id', changeUserAccountPassword);
 
 
 

@@ -4,7 +4,7 @@ const {comparePassword} = require('./plugins.js');
 
 
 
-async function changeUserAccountPassword(req, res) {
+const changeUserAccountPassword = async(req, res) => {
 	try {
 		const requestedUserAccount = await findUserAccountById(req.params.id);
 		// Sequence is so important in this if condition.

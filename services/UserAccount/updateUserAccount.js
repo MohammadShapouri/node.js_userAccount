@@ -3,7 +3,7 @@ const {validateUserNewInfo} = require('./validators.js');
 const {comparePassword, hashPassword} = require('./plugins.js');
 
 
-async function updateUserAccount (req, res) {
+const updateUserAccount = async(req, res) => {
 	try {
 		const requestedUserAccount = await findUserAccountById(req.params.id);
 		// Sequence is so important in this if condition.

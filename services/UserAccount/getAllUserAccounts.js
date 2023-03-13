@@ -1,7 +1,7 @@
 const {findAllUserAccounts} = require('../../models/user.models.js');
 
 
-async function getAllUserAccount(req, res) {
+const getAllUserAccount = async(req, res) => {
 	try {
 		// Parsing middleware will parse and add parameters to request object.
 		const userAccounts = await findAllUserAccounts(pageNumber=req.pageNumber,

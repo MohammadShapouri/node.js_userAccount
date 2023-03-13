@@ -1,11 +1,14 @@
 const {createUserAccount} = require('../../models/user.models.js');
+const {generateOTPCode, RETRY_COUNTER_LIMIT, ALL_OTP_USAGE_TYPES} = require('../../models/OTPValidation.models.js');
 const {validateUserCreationData} = require('./validators.js');
 
 
-async function addUserAccount(req, res) {
+const addUserAccount = async(req, res) => {
 	try {
 		const validationResult = await validateUserCreationData(req.body);
 		if(validationResult !== null) return res.status(400).send(validationResult);
+
+		
 
 		const newUserAccountCreationResult = await createUserAccount(req.body);
 		return res.status(200).send(newUserAccountCreationResult);
