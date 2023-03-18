@@ -373,6 +373,58 @@ function validatePasswordChangingInputs(body) {
 
 
 
+function validateOTPCodeVerificationInput(OTPCode) {
+	const OTPCodeValidationSchema = Joi.object({
+		OTP_code: Joi.string()
+			.label('OTP Code')
+			.required()
+			.empty()
+			.trim()
+			.min(8)
+			.max(8)
+			.messages({
+				"string.base": "{#label} must be string.",
+				"any.required": "{#label} is required.",
+				"string.empty": "{#label} must not be empty.",
+				"string.min": "{#label} must have atleast {#limit} characters.",
+				"string.max": "{#label} must have atleast {#limit} characters."
+			})
+	});
+	const JoiOTPCodeValidationResult = OTPCodeValidationSchema.validate(OTPCode, {abortEarly: false, stripUnknown: true});
+
+	var errorMessages = {};
+ 	if(JoiOTPCodeValidationResult.error) {
+		for(errorItem of JoiOTPCodeValidationResult.error["details"]) {
+			var key = errorItem["context"]["key"];
+			errorMessages[key] = errorItem["message"];
+		}
+	}
+
+	if(Object.keys(errorMessages).length === 0) return null;
+	return errorMessages;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -382,3 +434,4 @@ module.exports.validateUserCreationData = validateUserCreationData;
 module.exports.validateUserNewInfo = validateUserNewInfo;
 module.exports.ValidateDeleteAccountPasswords = ValidateDeleteAccountPasswords;
 module.exports.validatePasswordChangingInputs = validatePasswordChangingInputs;
+module.exports.validateOTPCodeVerificationInput = validateOTPCodeVerificationInput;

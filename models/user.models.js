@@ -11,6 +11,60 @@ mongoose.connect('mongodb://localhost/DemoUserModel')
 const usernameRegex = /^[A-Za-z][A-Za-z0-9_]{7,29}$/;
 const phone_numberRegex = /^09(1[0-9]|3[1-9]|2[1-9])-?[0-9]{3}-?[0-9]{4}$/;
 
+const RETRY_COUNTER_LIMIT = 5;
+const ALL_OTP_USAGE_TYPES = ['userAccount_verification', 'password_reset', 'new_phone_number_verification', 'login_second_step'];
+const OTP_EXPIRATION_TIME = {
+	userAccount_verification: +new Date() + 60*60*1000,
+	password_reset: +new Date() + 5*60*1000,
+	new_phone_number_verification: +new Date() + 60*60*1000,
+	login_second_step: +new Date() + 5*60*1000
+}
+
+
+
+
+const OTPValidationSchema = mongoose.Schema({
+	OTP_code: {
+		type: String,
+		minlength: 8,
+		maxlength: 8,
+		require: [true, 'OTP Code is required.']
+	},
+	retry_counter: {
+		type: Number,
+		max: 5,
+		default: 0
+	},
+	creation_date: {
+		type: Date,
+		default: Date.now
+	},
+	expire_at: {
+		type: Date,
+		default: +new Date() + 5*60*1000
+		// default: new Date(+new Date() + 5*60*1000)
+		// default: function() {return +new Date() + 5*60*1000}
+	},
+	usage_type: {
+		type: String,
+		require: [true, 'Decelaring usage type is required.'],
+		enum: ALL_OTP_USAGE_TYPES,
+		validate: {
+			isasync: false,
+			validator: function(value) {
+				return ALL_OTP_USAGE_TYPES.includes(value);
+			},
+			message: '{VALUE} is not among acceptable values of the list.'
+			
+		}
+	}
+});
+
+
+
+
+
+
 const UserAccountSchema = mongoose.Schema({
 	first_name: {
 		type: String,
@@ -73,9 +127,9 @@ const UserAccountSchema = mongoose.Schema({
 		default: false
 	},
 	OTP_code: {
-		type: mongoose.Schema.Types.ObjectId,
-		ref: "OTP Validation",
-		require: false
+		type: [OTPValidationSchema],
+		require: false,
+		default: undefined
 	}
 });
 const UserAccount = mongoose.model("User Account", UserAccountSchema)
@@ -84,6 +138,104 @@ const UserAccount = mongoose.model("User Account", UserAccountSchema)
 
 
 
+
+
+
+
+
+function generateOTPCode(OTPUsageType) {
+	if(ALL_OTP_USAGE_TYPES.includes(OTPUsageType) === false) {
+		throw new Error(`OTP usage type must be one of these values: ${ALL_OTP_USAGE_TYPES}`);
+	}
+
+	return {
+		OTP_code: parseInt(10000000 + Math.random()* 90000000),
+		expire_at: OTP_EXPIRATION_TIME[OTPUsageType],
+		usage_type: OTPUsageType
+	}
+}
+
+
+
+
+
+function addOTPCodeTOUserAcountBaseOnId(userAccount, OTPUsageType) {
+	const OTPCodeObject = generateOTPCode(OTPUsageType);
+	userAccount.OTP_code.push(OTPCodeObject);
+	userAccount.save();
+}
+
+
+
+
+function getOTPValidationObjectBaseOnUsage(userAccount, OTPUsageType) {
+	// var requestedOTPValidationObject = await UserAccount.findOne({"_id": '64115a2e137bf073f970c9f2'}, {"OTP_code": {$elemMatch: {"otp_usage": OTPUsageType}}});
+	// Sequence is important.
+	if(userAccount.OTP_code === undefined || userAccount.OTP_code.length === 0) return null;
+
+	for(eachOTPObject of userAccount.OTP_code) {
+		if(eachOTPObject.usage_type === OTPUsageType) return eachOTPObject
+	}
+	return null;
+}
+
+
+async function incrementOTPValidationObjectRetryCounter(userAccount, OTPObject) {
+	return await UserAccount.findOneAndUpdate({"_id": userAccount._id, "OTP_code._id": OTPObject._id}, {$inc: {"OTP_code.$.retry_counter": 1}}, {new: true});
+		// OR
+	// indexOfOTPObject = userAccount.OTP_code.indexOf(OTPObject);
+	// userAccount.OTP_code[indexOfOTPObject].retry_counter += 1;
+	// return await userAccount.save();
+}
+
+
+async function deleteOTPValidationObject(userAccount, OTPObject) {
+	return await UserAccount.findOneAndUpdate({"_id": userAccount._id, "OTP_code._id": OTPObject._id}, {$pull: {"OTP_code": {"_id": OTPObject._id}}});
+		// OR
+// 	indexOfOTPObject = userAccount.OTP_code.indexOf(OTPObject);
+// 	userAccount.OTP_code.splice(indexOfOTPObject, 1);
+// 	return await userAccount.save();
+}
+
+
+
+
+async function validateOTPCode(input_OTP_code, userAccount, OTPUsageType) {
+	if(ALL_OTP_USAGE_TYPES.includes(OTPUsageType) === false) {
+		throw new Error(`OTP usage type must be one of these values: ${ALL_OTP_USAGE_TYPES}`);
+	}
+
+
+	const requestedOTPValidationObject = getOTPValidationObjectBaseOnUsage(userAccount, OTPUsageType);
+	if(requestedOTPValidationObject === null) return {result: false, msg: 'No OTP code exists exists for validating this action.'}
+
+
+	if(Date.now() > requestedOTPValidationObject.expire_at) {
+		return {result: false, msg: 'OTP is expired. Request new one.'}
+	} else {
+		if(requestedOTPValidationObject.retry_counter >= 5) {
+			return {result: false, msg: 'Too many trys. Request new one.'}
+		} else {
+			if(input_OTP_code !== requestedOTPValidationObject.OTP_code) {
+				await incrementOTPValidationObjectRetryCounter(userAccount, requestedOTPValidationObject)
+				return {result: false, msg: 'OTP is not correct. Enter the correct one.'}
+			} else {
+				await deleteOTPValidationObject(userAccount, requestedOTPValidationObject)
+				return {result: true, msg: 'Successful!'}
+			}
+		}
+	}
+}
+
+
+
+// async function aa() {
+// 	const a = await UserAccount.findById('64115a2e137bf073f970c9f2')
+// 	const b = await getOTPValidationObjectBaseOnUsage(a, 'password_reset')
+// 	console.log(b);
+// 	await incrementOTPValidationObjectRetryCounter(a, b)
+// }
+// aa()
 
 
 
@@ -99,8 +251,8 @@ async function findUserAccountById(_id, selectFields=null) {
 // ?selectFields=password&selectFields=_id
 
 
-async function findUserAccountByPhoneNumber(phone_number) {
-	return await UserAccount.find({ phone_number: phone_number });
+async function findOneUserAccountByPhoneNumber(phone_number) {
+	return await UserAccount.findOne({ phone_number: phone_number });
 }
 
 
@@ -109,6 +261,7 @@ async function createUserAccount(body) {
 	body['password'] = hashedPassword;
 	delete body.password1;
 	delete body.password2;
+	body['OTP_code'] = generateOTPCode('userAccount_verification')
 	return await UserAccount.create(body);
 }
 
@@ -162,18 +315,24 @@ async function findAllUserAccounts(pageNumber, pageLimit, filterFields, sortFiel
 
 
 
+
+
+
+
 module.exports.usernameRegex = usernameRegex;
 module.exports.phone_numberRegex = phone_numberRegex;
 module.exports.UserAccount = UserAccount;
 module.exports.findUserAccountsForValidation = findUserAccountsForValidation;
 module.exports.findUserAccountById = findUserAccountById;
-module.exports.findUserAccountByPhoneNumber = findUserAccountByPhoneNumber;
+module.exports.findOneUserAccountByPhoneNumber = findOneUserAccountByPhoneNumber;
 module.exports.createUserAccount = createUserAccount;
 module.exports.updateUserAccountById = updateUserAccountById;
 module.exports.deleteUserAccountById = deleteUserAccountById;
 module.exports.findAllUserAccounts = findAllUserAccounts;
-
-
+module.exports.validateOTPCode = validateOTPCode;
+module.exports.getOTPValidationObjectBaseOnUsage = getOTPValidationObjectBaseOnUsage;
+module.exports.addOTPCodeTOUserAcountBaseOnId = addOTPCodeTOUserAcountBaseOnId
+module.exports.ALL_OTP_USAGE_TYPES = ALL_OTP_USAGE_TYPES;
 
 
 

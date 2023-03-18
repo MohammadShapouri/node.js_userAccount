@@ -4,6 +4,7 @@ const config = require('config');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const multer = require('multer');
+const sessions = require('express-session');
 
 
 const {URLParser} = require('./middlewares/URLParser.js');
@@ -24,6 +25,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(multer().none());
 app.use(morgan('tiny'));
 app.use(URLParser);
+app.use(sessions({
+    secret: "thisismysecrctekeyfhrgfgrfrty84fwir767",
+    saveUninitialized:true,
+    cookie: { maxAge: 1000 * 60 * 60 * 24 },
+    resave: false 
+}));
+
+
+
+
 
 
 // .
