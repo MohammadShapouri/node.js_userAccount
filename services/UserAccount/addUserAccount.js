@@ -7,8 +7,7 @@ const addUserAccount = async(req, res) => {
 		const validationResult = await validateUserCreationData(req.body);
 		if(validationResult !== null) return res.status(400).send(validationResult);
 
-		
-
+		// OTP code will be created during creating new user account.
 		const newUserAccountCreationResult = await createUserAccount(req.body);
 		return res.status(200).send(newUserAccountCreationResult);
 

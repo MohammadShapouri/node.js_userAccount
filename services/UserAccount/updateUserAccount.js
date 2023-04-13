@@ -1,6 +1,6 @@
 const {findUserAccountById, updateUserAccountById} = require('../../models/user.models.js');
 const {validateUserNewInfo} = require('./validators.js');
-const {comparePassword, hashPassword} = require('./plugins.js');
+
 
 
 const updateUserAccount = async(req, res) => {

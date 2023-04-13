@@ -3,14 +3,14 @@ const Joi = require('joi');
 Joi.objectId = require('joi-objectid')(Joi);
 
 
-
+// ALL PASSWORD2 CUSTOM VALIDATIONS MUST BE REDESIGNED.
 
 
 
 
 const usernameExists = 'Username already exists.'
 const phone_numberExists = 'Phone number already exists.'
-const password1Different = 'Two passwords are different from each other.'
+const password2Different = 'Two passwords are different from each other.'
 
 async function validateUserCreationData(body) {
 	const UserCreationSchema = Joi.object({
@@ -31,8 +31,9 @@ async function validateUserCreationData(body) {
 
 		last_name: Joi.string()
 			.label('Last name')
+			.optional()
+			.allow(null, '')
 			.trim()
-			.min(3)
 			.max(20)
 			.messages({
 				"string.base": "{#label} must be string.",
@@ -48,7 +49,7 @@ async function validateUserCreationData(body) {
 			.empty()
 			.trim()
 			.regex(usernameRegex)
-			.min(2)
+			.min(5)
 			.max(29)
 			.messages({
 				"string.base": "{#label} must be string.",
@@ -112,14 +113,17 @@ async function validateUserCreationData(body) {
 		}
 	}
 
+	// converts '' to null for last_name
+	if(body.last_name === '') body.last_name = null;
+
 	// Checks similarity between two passwords.
-	if((body.password2 && body.password2 !== '') && (body.password1 && body.password1 !== '')) {
+	if((body.password2 !== null && body.password2 !== '') && (body.password1 !== null && body.password1 !== '')) {
 		if(body.password1 !== body.password2) {
-			if(errorMessages.hasOwnProperty("password1")) {
-				const password1PreviousError = errorMessages["password1"];
-				errorMessages["password1"] = [password1Different, password1PreviousError];
+			if(errorMessages.hasOwnProperty("password2")) {
+				const password2PreviousError = errorMessages["password2"];
+				errorMessages["password2"] = [password2Different, password2PreviousError];
 			} else {
-				errorMessages["password1"] = password1Different;
+				errorMessages["password2"] = password2Different;
 			}	
 		}		
 	}
@@ -178,7 +182,8 @@ async function validateUserNewInfo(body, _id) {
 
 		last_name: Joi.string()
 			.label('Last name')
-			.min(3)
+			.optional()
+			.allow(null, '')
 			.max(20)
 			.messages({
 				"string.base": "{#label} must be string.",
@@ -189,11 +194,13 @@ async function validateUserNewInfo(body, _id) {
 
 		username: Joi.string()
 			.label('Username')
-			.min(2)
+			.regex(usernameRegex)
+			.min(5)
 			.max(29)
 			.messages({
 				"string.base": "{#label} must be string.",
 				"string.empty": "{#label} must not be empty.",
+				"string.pattern.base": "{#label} does not have valid pattern.",
 				"string.min": "{#label} must have atleast {#limit} characters.",
 				"string.max": "{#label} must have atleast {#limit} characters."
 			}),
@@ -223,6 +230,9 @@ async function validateUserNewInfo(body, _id) {
 			errorMessages[key] = errorItem["message"];
 		}
 	}
+
+	// converts '' to null for last_name
+	if(body.last_name === '') body.last_name = null;
 
 	const douplicateUsers = await findUserAccountsForValidation(body.username, body.phone_number);
 
@@ -329,14 +339,10 @@ function validatePasswordChangingInputs(body) {
 			.required()
 			.empty()
 			.trim()
-			.min(8)
-			.max(100)
 			.messages({
 				"string.base": "{#label} must be string.",
 				"any.required": "{#label} is required.",
 				"string.empty": "{#label} must not be empty.",
-				"string.min": "{#label} must have atleast {#limit} characters.",
-				"string.max": "{#label} must have atleast {#limit} characters."
 				})
 	});
 	const joiValidationResult = validatePasswordChangingInputsSchema.validate(body, {abortEarly: false, stripUnknown: true});
@@ -351,19 +357,89 @@ function validatePasswordChangingInputs(body) {
 
 
 	// Checks similarity between two passwords.
-	if((body.new_password2 && body.new_password2 !== '') && (body.new_password1 && body.new_password1 !== '')) {
+	if((body.new_password2 !== null && body.new_password2 !== '') && (body.new_password1 !== null && body.new_password1 !== '')) {
 		if(body.new_password1 !== body.new_password2) {
 			if(errorMessages.hasOwnProperty("new_password2")) {
-				const password1PreviousError = errorMessages["new_password2"];
-				errorMessages["new_password2"] = [password1Different, password1PreviousError];
+				const password2PreviousError = errorMessages["new_password2"];
+				errorMessages["new_password2"] = [password2Different, password2PreviousError];
 			} else {
-				errorMessages["new_password2"] = password1Different;
+				errorMessages["new_password2"] = password2Different;
 			}	
 		}		
 	}
 	if(Object.keys(errorMessages).length === 0) return null;
 	return errorMessages;
 }
+
+
+
+
+
+
+
+
+
+function validatePasswordResetInput(body) {
+	const validatePasswordResetInputSchema = Joi.object({
+		new_password1: Joi.string()
+			.label('New Password')
+			.required()
+			.empty()
+			.trim()
+			.min(8)
+			.max(100)
+			.messages({
+				"string.base": "{#label} must be string.",
+				"any.required": "{#label} is required.",
+				"string.empty": "{#label} must not be empty.",
+				"string.min": "{#label} must have atleast {#limit} characters.",
+				"string.max": "{#label} must have atleast {#limit} characters."
+				}),
+		new_password2: Joi.string()
+			.label('New Password')
+			.required()
+			.empty()
+			.trim()
+			.messages({
+				"string.base": "{#label} must be string.",
+				"any.required": "{#label} is required.",
+				"string.empty": "{#label} must not be empty."
+				})
+
+	});
+	const joiValidationResult = validatePasswordResetInputSchema.validate(body, {abortEarly: false, stripUnknown: true});
+
+	var errorMessages = {};
+ 	if(joiValidationResult.error) {
+		for(errorItem of joiValidationResult.error["details"]) {
+			var key = errorItem["context"]["key"];
+			errorMessages[key] = errorItem["message"];
+		}errorMessages
+	}
+
+
+	// Checks similarity between two passwords.
+	if((body.new_password2 !== null && body.new_password2 !== '') && (body.new_password1 !== null && body.new_password1 !== '')) {
+		if(body.new_password1 !== body.new_password2) {
+			if(errorMessages.hasOwnProperty("new_password2")) {
+				const password2PreviousError = errorMessages["new_password2"];
+				errorMessages["new_password2"] = [password2Different, password2PreviousError];
+			} else {
+				errorMessages["new_password2"] = password2Different;
+			}	
+		}		
+	}
+	if(Object.keys(errorMessages).length === 0) return null;
+	return errorMessages;
+
+}
+
+
+
+
+
+
+
 
 
 
@@ -390,15 +466,82 @@ function validateOTPCodeVerificationInput(OTPCode) {
 				"string.max": "{#label} must have atleast {#limit} characters."
 			})
 	});
-	const JoiOTPCodeValidationResult = OTPCodeValidationSchema.validate(OTPCode, {abortEarly: false, stripUnknown: true});
+	const JoiValidationResult = OTPCodeValidationSchema.validate(OTPCode, {abortEarly: false, stripUnknown: true});
 
 	var errorMessages = {};
- 	if(JoiOTPCodeValidationResult.error) {
-		for(errorItem of JoiOTPCodeValidationResult.error["details"]) {
+ 	if(JoiValidationResult.error) {
+		for(errorItem of JoiValidationResult.error["details"]) {
 			var key = errorItem["context"]["key"];
 			errorMessages[key] = errorItem["message"];
 		}
 	}
+
+	if(Object.keys(errorMessages).length === 0) return null;
+	return errorMessages;
+}
+
+
+
+
+
+
+
+
+
+function validateJWTTokenGenerationInput(body) {
+	// Finding general problems.
+	const UserJWTTokenGenerationInputSchema = Joi.object({
+		phone_number_username: Joi.string()
+			.label('Phone number or Username')
+			.required()
+			.empty()
+			.messages({
+				"string.base": "{#label} must be string.",
+				"any.required": "{#label} is required.",
+				"string.empty": "{#label} must not be empty."
+			}),
+		password: Joi.string()
+			.label('Password')
+			.required()
+			.empty()
+			.trim()
+			.messages({
+				"string.base": "{#label} must be string.",
+				"any.required": "{#label} is required.",
+				"string.empty": "{#label} must not be empty.",
+				"string.min": "{#label} must have atleast {#limit} characters.",
+				"string.max": "{#label} must have atleast {#limit} characters."
+				}),
+	});
+	const JoiValidationResult = UserJWTTokenGenerationInputSchema.validate(body, {abortEarly: false, stripUnknown: true});
+
+
+	var errorMessages = {};
+ 	if(JoiValidationResult.error) {
+		for(errorItem of JoiValidationResult.error["details"]) {
+			var key = errorItem["context"]["key"];
+			errorMessages[key] = errorItem["message"];
+		}
+	}
+
+	// Returns error messages if an error exists.
+	if(Object.keys(errorMessages).length !== 0) return errorMessages;
+
+
+	// Finding specidic problems base on body type.
+	if(/^\d+$/.test(body.phone_number_username) === true) {
+		// when input contains only numbers (phonenumber).
+		if(phone_numberRegex.test(body.phone_number_username) === false) {
+			errorMessages['phone_number_username'] = "Phone number does not have valid pattern.";
+		}
+	} else {
+		// when input contains numbers and strings (username).
+		if(usernameRegex.test(body.phone_number_username) === false) {
+			errorMessages['phone_number_username'] = "Username does not have valid pattern.";
+		}
+	}
+
+
 
 	if(Object.keys(errorMessages).length === 0) return null;
 	return errorMessages;
@@ -420,18 +563,10 @@ function validateOTPCodeVerificationInput(OTPCode) {
 
 
 
-
-
-
-
-
-
-
-
-
-
 module.exports.validateUserCreationData = validateUserCreationData;
 module.exports.validateUserNewInfo = validateUserNewInfo;
 module.exports.ValidateDeleteAccountPasswords = ValidateDeleteAccountPasswords;
 module.exports.validatePasswordChangingInputs = validatePasswordChangingInputs;
+module.exports.validatePasswordResetInput = validatePasswordResetInput;
 module.exports.validateOTPCodeVerificationInput = validateOTPCodeVerificationInput;
+module.exports.validateJWTTokenGenerationInput = validateJWTTokenGenerationInput;

@@ -1,10 +1,19 @@
 const {findUserAccountById} = require('../../models/user.models.js');
+const {URLParser} = require('./plugins.js');
+const {getFieldsName} = require('../../models/user.models.js');
+
+
 
 
 const getSpecificUserAccount = async (req, res) => {
 	try {
+		const allFields = getFieldsName();
+		const allowedFilterFieldsName = ['first_name', 'last_name', 'username', 'phone_number'];
+		const {pageNumber, pageLimit, filterFields, sortFields, selectFields} = URLParser(req, allFields, allowedFilterFieldsName);
+
+
 		req.filterFields.push({_id: req.params.id});
-		const requestedUserAccount = await findUserAccountById(filterFields=req.filterFields, selectFields=req.selectFields);
+		const requestedUserAccount = await findUserAccountById(filterFields, selectFields);
 		// Sequence is so important in this if condition.
 		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(400).json('No user exists with this ID.');
 

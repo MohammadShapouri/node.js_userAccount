@@ -3,6 +3,8 @@ const {ValidateDeleteAccountPasswords} = require('./validators.js');
 const {comparePassword} = require('./plugins.js');
 
 
+
+
 const deleteUserAccount = async(req, res) => {
 	try {
 		const requestedUserAccount = await findUserAccountById(req.params.id);
