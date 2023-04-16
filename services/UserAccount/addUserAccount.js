@@ -9,11 +9,11 @@ const addUserAccount = async(req, res) => {
 
 		// OTP code will be created during creating new user account.
 		const newUserAccountCreationResult = await createUserAccount(req.body);
-		return res.status(200).send(newUserAccountCreationResult);
+		return res.status(201).json("Please enter your OTP code.");
 
 	} catch(error) {
 		console.log(error);
-		return res.status(400).json('Something went wrong during creating new user account data.');		
+		return res.status(500).json('Something went wrong during creating new user account data.');		
 	}
 }
 

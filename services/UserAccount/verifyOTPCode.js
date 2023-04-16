@@ -9,7 +9,7 @@ async function verifyUserAccountVerificationOTP(req, res) {
 	try {
 		const requestedUserAccount = await findUserAccountById(req.params.id);
 		// Sequence is so important in this if condition.
-		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(400).json('No user exists with this ID.');
+		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(404).json('No user exists with this ID.');
 
 	
 		const validationResult = validateOTPCodeVerificationInput(req.body);
@@ -26,7 +26,7 @@ async function verifyUserAccountVerificationOTP(req, res) {
 
 	} catch(error) {
 		console.log(error);
-		return res.status(400).json("Something went wrong during checking OTP code.");
+		return res.status(500).json("Something went wrong during checking OTP code.");
 	}
 }
 
@@ -37,13 +37,13 @@ async function verifyUserAccountVerificationOTP(req, res) {
 async function verifyPasswordResetOTP(req, res) {
 	try {
 		if(req.session.requestedUserAccountData === undefined || req.session.requestedUserAccountData === null) {
-			return res.status(400).json('You don\'t have access to password reset otp verifier page.');
+			return res.status(403).json('You don\'t have access to password reset otp verifier page.');
 		} else {
 			const validationResult = validateOTPCodeVerificationInput(req.body);
 			if(validationResult !== null) return res.status(400).send(validationResult);
 
 			const requestedUserAccount = await findOneUserAccountByPhoneNumberOrUsername(req.session.requestedUserAccountData)
-			if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(400).json('No user exists with this phone number.');
+			if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(404).json('No user exists with this phone number.');
 
 
 			const verificationResult = await validateOTPCode(req.body.OTP_code, requestedUserAccount, ALL_OTP_USAGE_TYPES[1]);
@@ -56,7 +56,7 @@ async function verifyPasswordResetOTP(req, res) {
 		}
 	} catch(error) {
 		console.log(error);
-		return res.status(400).json("Something went wrong during checking OTP code.");
+		return res.status(500).json("Something went wrong during checking OTP code.");
 	}
 }
 
@@ -70,7 +70,7 @@ async function verifyNewPhoneNumberVerificationOTP(req, res) {
 		if(validationResult !== null) return res.status(400).send(validationResult)
 
 		const requestedUserAccount = await findUserAccountById(req.params.id)
-		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(400).json('No user exists with this ID.');
+		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(404).json('No user exists with this ID.');
 
 
 		const verificationResult = await validateOTPCode(req.body.OTP_code, requestedUserAccount, ALL_OTP_USAGE_TYPES[2]);
@@ -83,7 +83,7 @@ async function verifyNewPhoneNumberVerificationOTP(req, res) {
 
 	} catch(error) {
 		console.log(error);
-		return res.status(400).json("Something went wrong during checking OTP code.");
+		return res.status(500).json("Something went wrong during checking OTP code.");
 	}
 }
 
@@ -97,7 +97,7 @@ async function verifyLoginSecondStepOTP(req, res) {
 		if(validationResult !== null) return res.status(400).send(validationResult)
 
 		const requestedUserAccount = await findUserAccountById(req.params.id)
-		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(400).json('No user exists with this ID.');
+		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(404).json('No user exists with this ID.');
 
 
 		const verificationResult = await validateOTPCode(req.body.OTP_code, requestedUserAccount, ALL_OTP_USAGE_TYPES[3]);
@@ -110,7 +110,7 @@ async function verifyLoginSecondStepOTP(req, res) {
 
 	} catch(error) {
 		console.log(error);
-		return res.status(400).json("Something went wrong during checking OTP code.");
+		return res.status(500).json("Something went wrong during checking OTP code.");
 	}
 }
 

@@ -12,7 +12,7 @@ async function generatePasswordResetOTP(req, res) {
 		if(validationResult !== null) return res.status(400).send(validationResult);
 
 		const requestedUserAccount = await findOneUserAccountByPhoneNumberOrUsername(req.body.phone_number_username);
-		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(400).json('No user exists with this phone number.');
+		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(404).json('No user exists with this phone number.');
 
 
 		const passwordResetOTPSearchingResult = getOTPValidationObjectBaseOnUsage(requestedUserAccount, ALL_OTP_USAGE_TYPES[1]);
@@ -27,7 +27,7 @@ async function generatePasswordResetOTP(req, res) {
 		
 	} catch(error) {
 		console.log(error);
-		return res.status(400).json("Something went wrong during creating password reset OTP code.");
+		return res.status(500).json("Something went wrong during creating password reset OTP code.");
 	}
 }
 
@@ -39,11 +39,11 @@ async function generatePasswordResetOTP(req, res) {
 async function resetPassword(req, res) {
 	try {
 		if(req.session.hasPasswordResetAccess === undefined || req.session.hasPasswordResetAccess === null || req.session.hasPasswordResetAccess === false) {
-			return res.status(400).json('You don\'t have access to password reset page.');
+			return res.status(403).json('You don\'t have access to password reset page.');
 
 		} else if(req.session.hasPasswordResetAccess === true) {
 			const requestedUserAccount = await findOneUserAccountByPhoneNumberOrUsername(req.session.requestedUserAccountData);
-			if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(400).json('No user exists with this phone number.');
+			if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(404).json('No user exists with this phone number.');
 
 			const validationResult = validatePasswordResetInput(req.body);
 			if(validationResult !== null) return res.status(400).send(validationResult);
@@ -60,7 +60,7 @@ async function resetPassword(req, res) {
 		if(req.session.hasPasswordResetAccess !== undefined || req.session.hasPasswordResetAccess !== null || req.session.hasPasswordResetAccess !== false) {
 			delete req.session.hasPasswordResetAccess;
 		}
-		return res.status(400).json("Something went wrong during changing password reset OTP code.");	}
+		return res.status(500).json("Something went wrong during changing password reset OTP code.");	}
 }
 
 

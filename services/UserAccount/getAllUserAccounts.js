@@ -35,13 +35,12 @@ const getAllUserAccount = async(req, res) => {
 		}
 
 
-
 		// Returning error if no user exists.
 		// Sequence is important in this if condition.
-		if(userAccounts === null || userAccounts.data.length === 0) return res.status(400).json('No user exists.');
+		if(userAccounts === null || userAccounts.data.length === 0) return res.status(204).json('No user exists.');
 
 		// Sending users data.
-		res.status(200).send({
+		return res.status(200).send({
 						userAccounts: userAccounts.data,
 						totalPages: userAccounts.totalPages,
 						currentPage: userAccounts.currentPage
@@ -49,7 +48,7 @@ const getAllUserAccount = async(req, res) => {
 
 	} catch(error) {
 		console.error(error);
-		return res.status(400).json('Something went wrong during fetching user accounts\' data.');
+		return res.status(500).json('Something went wrong during fetching user accounts\' data.');
 	}
 }
 

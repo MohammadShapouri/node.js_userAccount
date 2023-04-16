@@ -8,7 +8,7 @@ const changeUserAccountPassword = async(req, res) => {
 	try {
 		const requestedUserAccount = await findUserAccountById(req.params.id);
 		// Sequence is so important in this if condition.
-		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(400).json('No user exists with this ID.');
+		if(requestedUserAccount === null || requestedUserAccount.length === 0) return res.status(404).json('No user exists with this ID.');
 
 		// Just validating inputs format.
 		const validationResult = validatePasswordChangingInputs(req.body);
@@ -25,7 +25,7 @@ const changeUserAccountPassword = async(req, res) => {
 		}
 	} catch(error) {
 		console.log(error);
-		return res.status(400).json('Something went wrong during changing user account password.');
+		return res.status(500).json('Something went wrong during changing user account password.');
 	}
 }
 
