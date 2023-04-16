@@ -13,26 +13,16 @@ const getAllUserAccount = async(req, res) => {
 		const allFields = getFieldsName();
 		var userAccounts = null;
 
-		if(req.user.is_authenticated === true && req.user.is_admin === true) {
-			const allowedFieldsName = getFieldsName();
-			var {pageNumber, pageLimit, filterFields, sortFields, selectFields} = URLParser(req, allFields, allowedFieldsName);
-			userAccounts = await findAllUserAccounts(pageNumber,
-												pageLimit,
-												filterFields,
-												sortFields,
-												selectFields
-												);
-		} else {
-			const allowedFieldsName = ['first_name', 'last_name', 'username', 'creation_date'];
-			var {pageNumber, pageLimit, filterFields, sortFields, selectFields} = URLParser(req, allFields, allowedFieldsName);
-			if(Object.keys(selectFields).length === 0) selectFields = {first_name: 1, last_name: 1, username: 1, creation_date: 1};
-			userAccounts = await findAllUserAccounts(pageNumber,
-												pageLimit,
-												filterFields,
-												sortFields,
-												selectFields
-												);
-		}
+		const allowedFieldsName = ['first_name', 'last_name', 'username', 'creation_date'];
+		var {pageNumber, pageLimit, filterFields, sortFields, selectFields} = URLParser(req, allFields, allowedFieldsName);
+		if(Object.keys(selectFields).length === 0) selectFields = {first_name: 1, last_name: 1, username: 1, creation_date: 1};
+		userAccounts = await findAllUserAccounts(pageNumber,
+											pageLimit,
+											filterFields,
+											sortFields,
+											selectFields
+											);
+
 
 
 		// Returning error if no user exists.
