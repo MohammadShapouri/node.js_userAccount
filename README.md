@@ -1,3 +1,3 @@
-# node.js_userAccount
+# Node.JS User Account Management System
 
-Node.JS UserAccout, A web Service for managing user accounts.
+*** Node.JS UserAccout, A web service for managing user accounts. ***
