@@ -1,3 +1,13 @@
-# Node.JS User Account Management System
+# Node.js User Account Manager
+_A user account management service powered by node.js and express.js for_
 
-*** Node.JS UserAccout, A web service for managing user accounts. ***
+### Features of this web service:
+* Adding user accounts
+* Getting user accounts
+* changing user acoounts data
+
+### Technologies which are used in this project:
+* Express.js
+* Mongoose
+* Joi
+* Express-session
